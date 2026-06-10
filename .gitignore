@@ -1,0 +1,34 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.idea/
+.vscode/
+
+# Playwright browser downloads / auth blobs
+.auth/
+*.storage.json
+auth.json
+
+# Local helper scripts — not part of the project, never pushed
+init_repo.bat
+init_repo.sh
+push.bat
+make_demo.py
+launch_posts.md
+docs/KICKOFF_BRIEF.md
+SNITCH_kickoff_brief.md
+
+# stray local artifacts
+.sync_probe
+make_demo.bat
