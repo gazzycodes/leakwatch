@@ -3,7 +3,7 @@
 Living document. Tracks what is shipped, what is in flight, and the decisions
 behind the design so the project stays coherent as it grows.
 
-## Current release: v0.1.0
+## Current release: v0.2.0
 
 A terminal-native website privacy scanner: drive headless Chromium, record the
 full tracking surface, classify it, and present a one-line verdict over deep
@@ -23,6 +23,9 @@ forensics. Built for engineers — scriptable, CI-friendly, local.
 - Modes: single scan, `batch` leaderboard (text/markdown/json), `diff` CI gate,
   `--json`, `--no-tui`, opt-in `--login` / `login` (bring-your-own-session;
   never stores a password), `--storage-state`.
+- Two-phase consent scan with cross-origin CMP handling; anti-bot context
+  (real UA/viewport/locale, no webdriver tell); block detection for
+  challenge walls and 4xx/5xx; consent/HTTP status surfaced everywhere.
 - Tests (offline, logic layers), GitHub Actions CI, packaging, README.
 
 ## Next (visual depth — dashboard shows less than the engine captures)

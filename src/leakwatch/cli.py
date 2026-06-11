@@ -50,6 +50,11 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Do not attempt to click the consent banner.",
     )
+    scan.add_argument(
+        "--show",
+        action="store_true",
+        help="Run with a visible browser window (watch the scan).",
+    )
 
     batch = sub.add_parser("batch", help="Scan many sites and rank them.")
     batch.add_argument("file", help="File with one URL per line (# for comments).")
@@ -135,6 +140,7 @@ def _cmd_scan(args) -> int:
                 timeout_ms=args.timeout,
                 storage_state=storage_state,
                 detect_consent=not args.no_consent,
+                headed=args.show,
             )
         except Exception as exc:  # noqa: BLE001
             return _fail(exc)
@@ -151,6 +157,7 @@ def _cmd_scan(args) -> int:
             "timeout_ms": args.timeout,
             "storage_state": storage_state,
             "detect_consent": not args.no_consent,
+            "headed": args.show,
         },
     )
     return EXIT_OK

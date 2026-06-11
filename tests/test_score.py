@@ -1,12 +1,17 @@
 import unittest
 
 from leakwatch.classify import classify_hosts
-from leakwatch.model import Fingerprint, Request, ScanResult
+from leakwatch.model import (
+    CONSENT_ACCEPTED,
+    Fingerprint,
+    Request,
+    ScanResult,
+)
 from leakwatch.score import compute_verdict
 
 
-def _result_with(hosts, *, fingerprints=None, before_consent=False):
-    result = ScanResult(url="https://example.com")
+def _result_with(hosts, *, fingerprints=None, before_consent=False, consent_state="none"):
+    result = ScanResult(url="https://example.com", consent_state=consent_state)
     result.requests = [
         Request(
             url="https://" + h + "/x",
@@ -51,11 +56,23 @@ class ScoreTests(unittest.TestCase):
         self.assertEqual(verdict.fingerprint_count, 1)
         self.assertIn("fingerprints you", verdict.headline)
 
-    def test_pre_consent_detected(self):
-        result = _result_with(["stats.g.doubleclick.net"], before_consent=True)
-        verdict = compute_verdict(result)
+    def test_pre_consent_only_counts_when_consent_accepted(self):
+        # Banner was found and accepted -> the pre-consent trackers count.
+        accepted = _result_with(
+            ["stats.g.doubleclick.net"],
+            before_consent=True,
+            consent_state=CONSENT_ACCEPTED,
+        )
+        verdict = compute_verdict(accepted)
         self.assertEqual(verdict.pre_consent_count, 1)
         self.assertIn("before consent", verdict.headline)
+
+    def test_no_banner_means_no_pre_consent_claim(self):
+        # No consent banner -> we must not claim "fired before consent".
+        none = _result_with(["stats.g.doubleclick.net"], before_consent=True)
+        verdict = compute_verdict(none)
+        self.assertEqual(verdict.pre_consent_count, 0)
+        self.assertNotIn("before consent", verdict.headline)
 
     def test_score_capped(self):
         hosts = list(

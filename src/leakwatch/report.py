@@ -9,11 +9,28 @@ from __future__ import annotations
 import json
 from typing import List
 
-from leakwatch.model import CATEGORY_ORDER, ScanResult
+from leakwatch.model import (
+    CATEGORY_ORDER,
+    CONSENT_ACCEPTED,
+    CONSENT_PRESENT,
+    CONSENT_SKIPPED,
+    ScanResult,
+)
 
 
 def render_json(result: ScanResult) -> str:
     return json.dumps(result.to_dict(), indent=2, sort_keys=True)
+
+
+def consent_label(result: ScanResult) -> str:
+    cmp = f" ({result.consent_cmp})" if result.consent_cmp else ""
+    if result.consent_state == CONSENT_ACCEPTED:
+        return f"accepted{cmp}"
+    if result.consent_state == CONSENT_PRESENT:
+        return f"banner present{cmp} — not auto-accepted (may under-report)"
+    if result.consent_state == CONSENT_SKIPPED:
+        return "skipped"
+    return "no banner detected"
 
 
 def render_text(result: ScanResult) -> str:
@@ -24,10 +41,13 @@ def render_text(result: ScanResult) -> str:
     lines.append(f"leakwatch · {target}")
     if result.error:
         lines.append(f"  error: {result.error}")
+    if result.blocked:
+        lines.append(f"  ! blocked: {result.blocked_reason}")
     verdict = result.verdict
     if verdict:
         lines.append(f"  {verdict.headline}")
         lines.append(f"  leakage score: {verdict.score}/100  (grade {verdict.grade})")
+    lines.append(f"  consent: {consent_label(result)}")
     lines.append("")
 
     if result.companies:

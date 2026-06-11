@@ -32,3 +32,4 @@ SNITCH_kickoff_brief.md
 # stray local artifacts
 .sync_probe
 make_demo.bat
+ship.bat

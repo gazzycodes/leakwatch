@@ -26,6 +26,7 @@ from leakwatch.model import (
     Request,
     ScanResult,
 )
+from leakwatch.report import consent_label
 
 _CATEGORY_COLOR = {
     CATEGORY_DATA_BROKER: "bright_red",
@@ -143,6 +144,9 @@ class LeakwatchApp(App):
         if result.error and not verdict:
             bar.update(f"[bright_red]scan failed: {result.error}[/]")
             return
+        if result.blocked:
+            bar.update(f"[bright_red]⚠ blocked — {result.blocked_reason}[/]")
+            return
         if verdict is None:
             bar.update("scan complete")
             return
@@ -169,18 +173,23 @@ class LeakwatchApp(App):
         feed = self.query_one("#feed", RichLog)
         third = sum(1 for r in result.requests if r.is_third_party)
         tracked = len(result.trackers)
+        active_fp = len([f for f in result.fingerprints if f.count > 0])
         feed.write("")
         if result.error:
             feed.write(f"[bright_red]✕ {result.error}[/]")
+        if result.blocked:
+            feed.write(f"[bright_red]⚠ blocked: {result.blocked_reason}[/]")
+        feed.write(f"[dim]consent: {consent_label(result)}[/]")
         feed.write(
             f"[green]✓ scan complete[/] — {third} third-party request(s), "
-            f"{tracked} known tracker(s). Press [b]q[/] to quit, [b]r[/] to rescan."
+            f"{tracked} known tracker(s), {active_fp} fingerprinting method(s). "
+            f"Press [b]q[/] to quit, [b]r[/] to rescan."
         )
         verdict = result.verdict
         if verdict is not None:
             self.sub_title = (
                 f"done · {verdict.score}/100 ({verdict.grade}) "
-                f"· q to quit"
+                f"· consent {consent_label(result)} · q to quit"
             )
         else:
             self.sub_title = "done · q to quit"

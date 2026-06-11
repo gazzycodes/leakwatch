@@ -3,15 +3,15 @@
 The score runs 0 (clean) to 100 (worst). It is intentionally simple and
 explainable: a small fixed weight per tracker, with heavier penalties for the
 things people actually care about — data brokers, session recorders, and
-trackers that fire before any consent is given.
+trackers that slip through a consent gate.
 """
 
 from __future__ import annotations
 
 from typing import List
 
-from leakwatch.classify import count_brokers, count_session_replay
-from leakwatch.model import ScanResult, TrackerHit, Verdict
+from leakwatch.classify import classify_host, count_brokers, count_session_replay
+from leakwatch.model import CONSENT_ACCEPTED, ScanResult, TrackerHit, Verdict
 
 _W_TRACKER = 3
 _W_COMPANY = 4
@@ -33,6 +33,23 @@ def _grade(score: int) -> str:
     return "F"
 
 
+def _pre_consent_trackers(result: ScanResult) -> int:
+    """Distinct tracker hosts that fired before consent was accepted.
+
+    Only meaningful when a consent banner actually existed and was accepted;
+    otherwise there was no gate to jump, so we do not claim "before consent".
+    """
+
+    if result.consent_state != CONSENT_ACCEPTED:
+        return 0
+    hosts = {
+        r.host
+        for r in result.requests
+        if r.is_third_party and r.before_consent and classify_host(r.host) is not None
+    }
+    return len(hosts)
+
+
 def compute_verdict(result: ScanResult) -> Verdict:
     """Derive the headline verdict from a completed scan."""
 
@@ -42,13 +59,7 @@ def compute_verdict(result: ScanResult) -> Verdict:
     broker_count = count_brokers(hits)
     replay_count = count_session_replay(hits)
     fingerprint_count = len([f for f in result.fingerprints if f.count > 0])
-    pre_consent_domains = len(
-        {
-            r.host
-            for r in result.requests
-            if r.is_third_party and r.before_consent
-        }
-    )
+    pre_consent = _pre_consent_trackers(result)
 
     raw = (
         tracker_count * _W_TRACKER
@@ -56,7 +67,7 @@ def compute_verdict(result: ScanResult) -> Verdict:
         + broker_count * _W_BROKER
         + replay_count * _W_SESSION_REPLAY
         + fingerprint_count * _W_FINGERPRINT
-        + min(pre_consent_domains, 10) * _W_PRE_CONSENT
+        + min(pre_consent, 10) * _W_PRE_CONSENT
     )
     score = max(0, min(100, raw))
 
@@ -66,7 +77,7 @@ def compute_verdict(result: ScanResult) -> Verdict:
         broker_count=broker_count,
         records_screen=replay_count > 0,
         fingerprint_count=fingerprint_count,
-        pre_consent_domains=pre_consent_domains,
+        pre_consent=pre_consent,
     )
 
     return Verdict(
@@ -77,7 +88,7 @@ def compute_verdict(result: ScanResult) -> Verdict:
         broker_count=broker_count,
         fingerprint_count=fingerprint_count,
         records_screen=replay_count > 0,
-        pre_consent_count=pre_consent_domains,
+        pre_consent_count=pre_consent,
         headline=headline,
     )
 
@@ -99,7 +110,7 @@ def _headline(
     broker_count: int,
     records_screen: bool,
     fingerprint_count: int,
-    pre_consent_domains: int,
+    pre_consent: int,
 ) -> str:
     if tracker_count == 0:
         return f"{_dot(score)} No known trackers detected"
@@ -112,8 +123,8 @@ def _headline(
         parts.append(
             f"fingerprints you {fingerprint_count} way{_s(fingerprint_count)}"
         )
-    if pre_consent_domains:
-        parts.append(f"{pre_consent_domains} fired before consent")
+    if pre_consent:
+        parts.append(f"{pre_consent} fired before consent")
     return f"{_dot(score)} " + " · ".join(parts)
 
 

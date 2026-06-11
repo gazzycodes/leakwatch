@@ -32,6 +32,12 @@ CATEGORY_ORDER = [
     CATEGORY_OTHER,
 ]
 
+# Consent outcomes for a scan.
+CONSENT_NONE = "none"        # no banner detected
+CONSENT_ACCEPTED = "accepted"  # banner detected and accepted
+CONSENT_SKIPPED = "skipped"  # consent handling disabled by the caller
+CONSENT_PRESENT = "present"  # banner detected but could not auto-accept
+
 
 @dataclass
 class Request:
@@ -117,6 +123,13 @@ class ScanResult:
     final_url: str = ""
     duration_ms: int = 0
     error: Optional[str] = None
+    status_code: Optional[int] = None
+    # Consent handling outcome.
+    consent_state: str = CONSENT_NONE
+    consent_cmp: str = ""
+    # Anti-bot / availability.
+    blocked: bool = False
+    blocked_reason: str = ""
     requests: List[Request] = field(default_factory=list)
     cookies: List[Cookie] = field(default_factory=list)
     storage: List[StorageWrite] = field(default_factory=list)
@@ -133,6 +146,11 @@ class ScanResult:
             "final_url": self.final_url,
             "duration_ms": self.duration_ms,
             "error": self.error,
+            "status_code": self.status_code,
+            "consent_state": self.consent_state,
+            "consent_cmp": self.consent_cmp,
+            "blocked": self.blocked,
+            "blocked_reason": self.blocked_reason,
             "verdict": _verdict_dict(self.verdict),
             "trackers": [t.__dict__ for t in self.trackers],
             "companies": [c.__dict__ for c in self.companies],

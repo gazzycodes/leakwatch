@@ -102,3 +102,22 @@ STORAGE_EXPRESSION = r"""
   return out;
 }
 """
+
+# Detect a consent-management platform via standard APIs and known globals.
+# Language- and DOM-independent: tells us a consent gate exists even when the
+# accept button cannot be clicked, so a gated site is never reported as clean.
+CMP_DETECT_EXPRESSION = r"""
+() => {
+  const out = { present: false, cmp: '' };
+  const mark = (name) => { out.present = true; if (!out.cmp) out.cmp = name; };
+  try { if (typeof window.__tcfapi === 'function') mark('IAB TCF'); } catch (e) {}
+  try { if (typeof window.__gpp === 'function') mark('IAB GPP'); } catch (e) {}
+  try { if (typeof window.__cmp === 'function') mark('IAB TCF v1'); } catch (e) {}
+  try { if (window.OneTrust || window.Optanon) mark('OneTrust'); } catch (e) {}
+  try { if (window.Cookiebot || window.CookieConsent) mark('Cookiebot'); } catch (e) {}
+  try { if (window.Didomi) mark('Didomi'); } catch (e) {}
+  try { if (window.__uspapi) mark('US Privacy'); } catch (e) {}
+  try { if (window.Cookielaw) mark('OneTrust'); } catch (e) {}
+  return out;
+}
+"""

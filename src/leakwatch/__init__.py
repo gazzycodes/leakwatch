@@ -4,7 +4,7 @@ from leakwatch.classify import classify_host, classify_hosts
 from leakwatch.model import ScanResult, TrackerHit, Verdict
 from leakwatch.score import compute_verdict
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __all__ = [
     "ScanResult",
     "TrackerHit",
