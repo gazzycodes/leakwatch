@@ -18,6 +18,15 @@ from leakwatch.model import (
 )
 
 
+def category_counts(result: ScanResult) -> dict:
+    """Number of distinct tracker domains per category."""
+
+    counts: dict = {}
+    for hit in result.trackers:
+        counts[hit.category] = counts.get(hit.category, 0) + 1
+    return counts
+
+
 def render_json(result: ScanResult) -> str:
     return json.dumps(result.to_dict(), indent=2, sort_keys=True)
 

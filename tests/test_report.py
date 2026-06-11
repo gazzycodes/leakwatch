@@ -9,6 +9,7 @@ from leakwatch.model import (
     ScanResult,
 )
 from leakwatch.report import (
+    category_counts,
     consent_label,
     diff_against_baseline,
     render_json,
@@ -63,6 +64,12 @@ class RenderTests(unittest.TestCase):
     def test_scorecard_markdown(self):
         card = render_scorecard([self.result], fmt="markdown")
         self.assertIn("| # | Site |", card)
+
+    def test_category_counts(self):
+        counts = category_counts(self.result)
+        self.assertEqual(counts.get("data-broker"), 1)
+        self.assertEqual(counts.get("analytics"), 1)
+        self.assertEqual(counts.get("session-replay"), 1)
 
     def test_diff_detects_new_tracker(self):
         baseline = {"trackers": [{"domain": "google-analytics.com"}]}

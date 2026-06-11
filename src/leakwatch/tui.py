@@ -1,8 +1,9 @@
-"""The live Textual dashboard — verdict bar, streaming request feed, rollup.
+"""The live Textual dashboard — verdict bar, streaming feed, rollup, and panels.
 
 Imported lazily by the CLI so text/JSON output never needs Textual installed.
 The futurism is the live, colour-drenched stream, not pixels: requests scroll in
-as the page loads, each tinted by what kind of tracker it is.
+as the page loads, each tinted by what kind of tracker it is, and the bottom
+panels summarise fingerprinting, cookies/storage, and the category breakdown.
 """
 
 from __future__ import annotations
@@ -19,14 +20,16 @@ from leakwatch.classify import classify_host
 from leakwatch.model import (
     CATEGORY_ADVERTISING,
     CATEGORY_ANALYTICS,
+    CATEGORY_CDN,
     CATEGORY_DATA_BROKER,
     CATEGORY_FINGERPRINTING,
+    CATEGORY_ORDER,
     CATEGORY_SESSION_REPLAY,
     CATEGORY_SOCIAL,
     Request,
     ScanResult,
 )
-from leakwatch.report import consent_label
+from leakwatch.report import category_counts, consent_label
 
 _CATEGORY_COLOR = {
     CATEGORY_DATA_BROKER: "bright_red",
@@ -35,6 +38,7 @@ _CATEGORY_COLOR = {
     CATEGORY_ADVERTISING: "yellow",
     CATEGORY_SOCIAL: "cyan",
     CATEGORY_ANALYTICS: "blue",
+    CATEGORY_CDN: "green",
 }
 
 
@@ -60,8 +64,11 @@ class LeakwatchApp(App):
         text-style: bold;
         background: $panel;
     }
+    #main { height: 1fr; }
     #feed { width: 2fr; border: round $primary; }
     #companies { width: 1fr; border: round $secondary; }
+    #panels { height: 10; }
+    .panel { width: 1fr; border: round $accent; padding: 0 1; }
     """
 
     BINDINGS = [
@@ -79,11 +86,21 @@ class LeakwatchApp(App):
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         yield Static("Scanning " + self._url + " ...", id="verdict")
-        with Horizontal():
+        with Horizontal(id="main"):
             yield RichLog(id="feed", highlight=False, markup=True, wrap=False)
             table = DataTable(id="companies", zebra_stripes=True)
             table.add_columns("Company", "Domains", "Categories")
             yield table
+        with Horizontal(id="panels"):
+            fp = Static("—", id="fingerprints", classes="panel")
+            fp.border_title = "Fingerprinting"
+            yield fp
+            ck = Static("—", id="cookies", classes="panel")
+            ck.border_title = "Cookies & Storage"
+            yield ck
+            cat = Static("—", id="categories", classes="panel")
+            cat.border_title = "By category"
+            yield cat
         yield Footer()
 
     def on_mount(self) -> None:
@@ -95,6 +112,8 @@ class LeakwatchApp(App):
         self.query_one("#feed", RichLog).clear()
         self.query_one("#companies", DataTable).clear()
         self.query_one("#verdict", Static).update("Scanning " + self._url + " ...")
+        for pid in ("#fingerprints", "#cookies", "#categories"):
+            self.query_one(pid, Static).update("—")
         self.sub_title = "scanning " + self._url + " ..."
         self._seen = 0
         self._run_scan()
@@ -133,10 +152,12 @@ class LeakwatchApp(App):
         )
 
     def on_scan_done(self, message: ScanDone) -> None:
-        self._result = message.result
-        self._render_verdict(message.result)
-        self._render_companies(message.result)
-        self._render_footer_note(message.result)
+        result = message.result
+        self._result = result
+        self._render_verdict(result)
+        self._render_companies(result)
+        self._render_panels(result)
+        self._render_footer_note(result)
 
     def _render_verdict(self, result: ScanResult) -> None:
         verdict = result.verdict
@@ -169,6 +190,11 @@ class LeakwatchApp(App):
                 place, str(len(company.domains)), ", ".join(company.categories)
             )
 
+    def _render_panels(self, result: ScanResult) -> None:
+        self.query_one("#fingerprints", Static).update(_fingerprint_panel(result))
+        self.query_one("#cookies", Static).update(_cookies_panel(result))
+        self.query_one("#categories", Static).update(_categories_panel(result))
+
     def _render_footer_note(self, result: ScanResult) -> None:
         feed = self.query_one("#feed", RichLog)
         third = sum(1 for r in result.requests if r.is_third_party)
@@ -193,6 +219,41 @@ class LeakwatchApp(App):
             )
         else:
             self.sub_title = "done · q to quit"
+
+
+def _fingerprint_panel(result: ScanResult) -> str:
+    active = [f for f in result.fingerprints if f.count > 0]
+    if not active:
+        return "[green]none detected[/]"
+    return "\n".join(f"[magenta]{f.technique:<10}[/] ×{f.count}" for f in active)
+
+
+def _cookies_panel(result: ScanResult) -> str:
+    cookies = result.cookies
+    first = sum(1 for c in cookies if not c.is_third_party)
+    third = sum(1 for c in cookies if c.is_third_party)
+    secure = sum(1 for c in cookies if c.secure)
+    http_only = sum(1 for c in cookies if c.http_only)
+    local = sum(1 for s in result.storage if s.kind == "local")
+    session = sum(1 for s in result.storage if s.kind == "session")
+    return (
+        f"cookies: [b]{len(cookies)}[/]  (1st {first} · [yellow]3rd {third}[/])\n"
+        f"secure {secure} · httpOnly {http_only}\n"
+        f"storage keys: local {local} · session {session}"
+    )
+
+
+def _categories_panel(result: ScanResult) -> str:
+    counts = category_counts(result)
+    if not counts:
+        return "[green]no known trackers[/]"
+    lines = []
+    for category in CATEGORY_ORDER:
+        n = counts.get(category)
+        if n:
+            color = _CATEGORY_COLOR.get(category, "white")
+            lines.append(f"[{color}]{category:<14}[/] {n}")
+    return "\n".join(lines)
 
 
 def _gauge(score: int, width: int = 20) -> str:

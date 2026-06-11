@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-06-11
+
+### Added
+
+- Expanded the curated tracker dataset to ~200 entries across ad-tech (SSPs,
+  DSPs, exchanges, verification), analytics, tag managers, CDPs, session
+  recorders, data brokers, social, CDNs, and consent vendors — so far more third
+  parties are named and attributed instead of shown as generic "third-party".
+- Dashboard panels: live Fingerprinting, Cookies & Storage, and category
+  breakdown panels summarising what the engine captures, beneath the request feed
+  and company rollup.
+
 ## [0.2.0] - 2026-06-11
 
 ### Added
