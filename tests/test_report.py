@@ -9,6 +9,7 @@ from leakwatch.model import (
     ScanResult,
 )
 from leakwatch.report import (
+    _status_note,
     category_counts,
     consent_label,
     diff_against_baseline,
@@ -76,6 +77,24 @@ class RenderTests(unittest.TestCase):
         new = diff_against_baseline(self.result, baseline)
         self.assertIn("bluekai.com", new)
         self.assertNotIn("google-analytics.com", new)
+
+
+class StatusNoteTests(unittest.TestCase):
+    def test_blocked(self):
+        r = ScanResult(url="x", blocked=True, blocked_reason="HTTP 403")
+        self.assertEqual(_status_note(r), "blocked")
+
+    def test_failed_error_page(self):
+        r = ScanResult(url="https://dailymail.co.uk",
+                       final_url="chrome-error://chromewebdata/")
+        self.assertEqual(_status_note(r), "failed")
+
+    def test_consent_wall(self):
+        r = ScanResult(url="x", consent_state=CONSENT_PRESENT)
+        self.assertEqual(_status_note(r), "consent wall")
+
+    def test_clean(self):
+        self.assertEqual(_status_note(ScanResult(url="x")), "")
 
 
 class ConsentLabelTests(unittest.TestCase):

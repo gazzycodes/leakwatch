@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.6.1] - 2026-06-11
+
+### Fixed
+
+- Packaging: removed a broken `force-include` that prevented the wheel/sdist from
+  building. The bundled tracker dataset now ships correctly in the package.
+
+### Changed
+
+- Leaderboard honesty: sites that could not be fully measured — bot-blocked,
+  failed to load, or behind an unaccepted consent wall — are now flagged in a
+  `Note` column instead of being ranked as clean (grade A). Error-page hosts
+  (e.g. `chromewebdata`) resolve back to the requested domain.
+
 ## [0.6.0] - 2026-06-11
 
 ### Added

@@ -135,6 +135,32 @@ def _score_dot(score: int) -> str:
     return "\U0001f534"  # red
 
 
+def _status_note(result: ScanResult) -> str:
+    """Flag sites we could not fully measure, so they are not read as 'clean'."""
+
+    if result.blocked:
+        return "blocked"
+    if _is_error_page(result) or result.error:
+        return "failed"
+    if result.consent_state == CONSENT_PRESENT:
+        return "consent wall"
+    return ""
+
+
+def _is_error_page(result: ScanResult) -> bool:
+    final = result.final_url or ""
+    return final.startswith("chrome-error") or "chromewebdata" in final
+
+
+def _site_label(result: ScanResult) -> str:
+    from leakwatch.classify import host_from_url
+
+    host = host_from_url(result.final_url or "")
+    if not host or host == "chromewebdata" or _is_error_page(result):
+        host = host_from_url(result.url)
+    return host or result.url
+
+
 def _row_fields(result: ScanResult):
     verdict = result.verdict
     site = _site_label(result)
@@ -144,42 +170,40 @@ def _row_fields(result: ScanResult):
     brokers = verdict.broker_count if verdict else 0
     replay = "yes" if (verdict and verdict.records_screen) else "no"
     fp = "yes" if (verdict and verdict.fingerprint_count) else "no"
-    return site, score, grade, trackers, brokers, replay, fp
+    note = _status_note(result)
+    return site, score, grade, trackers, brokers, replay, fp, note
 
 
 def _scorecard_text(ranked: List[ScanResult]) -> str:
     header = (
         f"{'#':>2}  {'site':<26}{'score':>6} {'grd':>4}  "
-        f"{'trk':>4}  {'brk':>4}  {'rec':>3}  fp"
+        f"{'trk':>4}  {'brk':>4}  {'rec':>3}  {'fp':>3}  note"
     )
     lines = ["leakwatch leaderboard — ranked by leakage", header, "-" * len(header)]
     for i, result in enumerate(ranked, 1):
-        site, score, grade, trackers, brokers, replay, fp = _row_fields(result)
+        site, score, grade, trackers, brokers, replay, fp, note = _row_fields(result)
         lines.append(
             f"{i:>2}  {site[:26]:<26}{score:>6} {grade:>4}  "
-            f"{trackers:>4}  {brokers:>4}  {replay:>3}  {fp}"
+            f"{trackers:>4}  {brokers:>4}  {replay:>3}  {fp:>3}  {note}"
         )
     return "\n".join(lines)
 
 
 def _scorecard_markdown(ranked: List[ScanResult]) -> str:
     lines = [
-        "| # | Site | Leakage | Trackers | Brokers | Records screen | Fingerprinting |",
-        "|--:|------|:--------|--------:|--------:|:--------------:|:--------------:|",
+        "| # | Site | Leakage | Trackers | Brokers | Records screen "
+        "| Fingerprinting | Note |",
+        "|--:|------|:--------|--------:|--------:|:--------------:"
+        "|:--------------:|------|",
     ]
     for i, result in enumerate(ranked, 1):
-        site, score, grade, trackers, brokers, replay, fp = _row_fields(result)
+        site, score, grade, trackers, brokers, replay, fp, note = _row_fields(result)
         badge = f"{_score_dot(score)} {score} ({grade})"
         lines.append(
-            f"| {i} | {site} | {badge} | {trackers} | {brokers} | {replay} | {fp} |"
+            f"| {i} | {site} | {badge} | {trackers} | {brokers} "
+            f"| {replay} | {fp} | {note} |"
         )
     return "\n".join(lines)
-
-
-def _site_label(result: ScanResult) -> str:
-    from leakwatch.classify import host_from_url
-
-    return host_from_url(result.final_url or result.url) or result.url
 
 
 def diff_against_baseline(result: ScanResult, baseline: dict):

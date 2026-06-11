@@ -105,13 +105,23 @@ in text, Markdown, or JSON:
 leakwatch batch examples/news-sites.txt --format markdown --out leaderboard.md
 ```
 
-Example output:
+Real run across 15 major news sites (top of the list shown):
 
 | # | Site | Leakage | Trackers | Brokers | Records screen | Fingerprinting |
 |--:|------|:--------|--------:|--------:|:--------------:|:--------------:|
-| 1 | example-news.com | 🔴 96 (F) | 41 | 5 | yes | yes |
-| 2 | example-shop.com | 🟠 64 (C) | 22 | 1 | no | yes |
-| 3 | example-wiki.org | 🟢 0 (A) | 0 | 0 | no | no |
+| 1 | foxnews.com | 🔴 100 (F) | 116 | 11 | no | yes |
+| 2 | usatoday.com | 🔴 100 (F) | 116 | 11 | no | yes |
+| 3 | forbes.com | 🔴 100 (F) | 113 | 11 | no | yes |
+| 4 | thesun.co.uk | 🔴 100 (F) | 113 | 14 | no | yes |
+| 5 | businessinsider.com | 🔴 100 (F) | 109 | 19 | no | yes |
+| 6 | cnn.com | 🔴 100 (F) | 108 | 13 | no | yes |
+| 7 | buzzfeed.com | 🔴 100 (F) | 96 | 15 | no | yes |
+| 8 | theguardian.com | 🔴 100 (F) | 81 | 12 | no | yes |
+| 9 | nbcnews.com | 🔴 100 (F) | 58 | 5 | no | yes |
+| 10 | cnbc.com | 🔴 100 (F) | 48 | 5 | no | yes |
+
+*Sites behind hard bot-walls or unaccepted consent gates (e.g. Reuters, Bloomberg)
+are flagged in a `Note` column as under-measured, never ranked as clean.*
 
 ### CI mode — a tracker linter for your own site
 
