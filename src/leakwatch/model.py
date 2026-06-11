@@ -130,6 +130,7 @@ class ScanResult:
     # Anti-bot / availability.
     blocked: bool = False
     blocked_reason: str = ""
+    security_headers: Dict[str, str] = field(default_factory=dict)
     requests: List[Request] = field(default_factory=list)
     cookies: List[Cookie] = field(default_factory=list)
     storage: List[StorageWrite] = field(default_factory=list)
@@ -151,6 +152,7 @@ class ScanResult:
             "consent_cmp": self.consent_cmp,
             "blocked": self.blocked,
             "blocked_reason": self.blocked_reason,
+            "security_headers": self.security_headers,
             "verdict": _verdict_dict(self.verdict),
             "trackers": [t.__dict__ for t in self.trackers],
             "companies": [c.__dict__ for c in self.companies],

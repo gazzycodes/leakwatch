@@ -16,6 +16,7 @@ from leakwatch.model import (
     CONSENT_SKIPPED,
     ScanResult,
 )
+from leakwatch.security import audit_headers, header_grade
 
 
 def category_counts(result: ScanResult) -> dict:
@@ -83,6 +84,15 @@ def render_text(result: ScanResult) -> str:
     if active_fp:
         techniques = ", ".join(f"{f.technique}({f.count})" for f in active_fp)
         lines.append(f"Fingerprinting: {techniques}")
+
+    findings = audit_headers(result.security_headers)
+    present = [f.name for f in findings if f.present]
+    missing = [f.name for f in findings if not f.present]
+    lines.append(
+        f"Security headers (grade {header_grade(findings)}): "
+        f"present: {', '.join(present) or 'none'}; "
+        f"missing: {', '.join(missing) or 'none'}"
+    )
 
     third = sum(1 for r in result.requests if r.is_third_party)
     lines.append(

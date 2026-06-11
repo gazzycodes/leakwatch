@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] - 2026-06-11
+
+### Added
+
+- Security-headers audit: captures the main response's HSTS, CSP, X-Frame-Options,
+  X-Content-Type-Options, Referrer-Policy, and Permissions-Policy, grades the
+  posture A–F, and surfaces it in the text report, JSON, and a dashboard panel.
+- README overhauled to document the full current feature set (two-phase consent,
+  CMP/anti-bot/block detection, ~200-tracker dataset, dashboard panels).
+
 ## [0.3.0] - 2026-06-11
 
 ### Added

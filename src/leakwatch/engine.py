@@ -50,6 +50,7 @@ from leakwatch.model import (
     StorageWrite,
 )
 from leakwatch.score import compute_verdict
+from leakwatch.security import SECURITY_HEADER_KEYS
 
 RequestCallback = Optional[Callable[[Request], None]]
 
@@ -199,6 +200,15 @@ async def scan_async(
             )
             if response is not None:
                 result.status_code = response.status
+                try:
+                    hdrs = await response.all_headers()
+                except Exception:  # noqa: BLE001
+                    hdrs = dict(response.headers)
+                result.security_headers = {
+                    k: v
+                    for k, v in (hdrs or {}).items()
+                    if k.lower() in SECURITY_HEADER_KEYS
+                }
         except Exception as exc:  # noqa: BLE001 - report, don't crash the scan
             result.error = str(exc).splitlines()[0]
         try:

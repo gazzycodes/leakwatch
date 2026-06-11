@@ -30,6 +30,7 @@ from leakwatch.model import (
     ScanResult,
 )
 from leakwatch.report import category_counts, consent_label
+from leakwatch.security import audit_headers
 
 _CATEGORY_COLOR = {
     CATEGORY_DATA_BROKER: "bright_red",
@@ -101,6 +102,9 @@ class LeakwatchApp(App):
             cat = Static("—", id="categories", classes="panel")
             cat.border_title = "By category"
             yield cat
+            sec = Static("—", id="security", classes="panel")
+            sec.border_title = "Security headers"
+            yield sec
         yield Footer()
 
     def on_mount(self) -> None:
@@ -112,7 +116,7 @@ class LeakwatchApp(App):
         self.query_one("#feed", RichLog).clear()
         self.query_one("#companies", DataTable).clear()
         self.query_one("#verdict", Static).update("Scanning " + self._url + " ...")
-        for pid in ("#fingerprints", "#cookies", "#categories"):
+        for pid in ("#fingerprints", "#cookies", "#categories", "#security"):
             self.query_one(pid, Static).update("—")
         self.sub_title = "scanning " + self._url + " ..."
         self._seen = 0
@@ -194,6 +198,7 @@ class LeakwatchApp(App):
         self.query_one("#fingerprints", Static).update(_fingerprint_panel(result))
         self.query_one("#cookies", Static).update(_cookies_panel(result))
         self.query_one("#categories", Static).update(_categories_panel(result))
+        self.query_one("#security", Static).update(_security_panel(result))
 
     def _render_footer_note(self, result: ScanResult) -> None:
         feed = self.query_one("#feed", RichLog)
@@ -253,6 +258,18 @@ def _categories_panel(result: ScanResult) -> str:
         if n:
             color = _CATEGORY_COLOR.get(category, "white")
             lines.append(f"[{color}]{category:<14}[/] {n}")
+    return "\n".join(lines)
+
+
+def _security_panel(result: ScanResult) -> str:
+    findings = audit_headers(result.security_headers)
+    sev_color = {"high": "red", "medium": "yellow", "low": "grey50"}
+    lines = []
+    for f in findings:
+        if f.present:
+            lines.append(f"[green]✓[/] {f.name}")
+        else:
+            lines.append(f"[{sev_color[f.severity]}]✗ {f.name}[/]")
     return "\n".join(lines)
 
 
