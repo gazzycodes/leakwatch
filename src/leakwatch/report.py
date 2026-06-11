@@ -125,6 +125,16 @@ def render_scorecard(results: List[ScanResult], *, fmt: str = "text") -> str:
     return _scorecard_text(ranked)
 
 
+def _score_dot(score: int) -> str:
+    if score <= 25:
+        return "\U0001f7e2"  # green
+    if score <= 50:
+        return "\U0001f7e1"  # yellow
+    if score <= 75:
+        return "\U0001f7e0"  # orange
+    return "\U0001f534"  # red
+
+
 def _row_fields(result: ScanResult):
     verdict = result.verdict
     site = _site_label(result)
@@ -133,33 +143,35 @@ def _row_fields(result: ScanResult):
     trackers = verdict.tracker_count if verdict else 0
     brokers = verdict.broker_count if verdict else 0
     replay = "yes" if (verdict and verdict.records_screen) else "no"
-    return site, score, grade, trackers, brokers, replay
+    fp = "yes" if (verdict and verdict.fingerprint_count) else "no"
+    return site, score, grade, trackers, brokers, replay, fp
 
 
 def _scorecard_text(ranked: List[ScanResult]) -> str:
     header = (
-        f"{'#':>2}  {'site':<28}{'score':>6}  "
-        f"{'grd':>3}  {'trk':>4}  {'brk':>4}  rec"
+        f"{'#':>2}  {'site':<26}{'score':>6} {'grd':>4}  "
+        f"{'trk':>4}  {'brk':>4}  {'rec':>3}  fp"
     )
     lines = ["leakwatch leaderboard — ranked by leakage", header, "-" * len(header)]
     for i, result in enumerate(ranked, 1):
-        site, score, grade, trackers, brokers, replay = _row_fields(result)
+        site, score, grade, trackers, brokers, replay, fp = _row_fields(result)
         lines.append(
-            f"{i:>2}  {site[:28]:<28}{score:>6}  {grade:>3}  "
-            f"{trackers:>4}  {brokers:>4}  {replay}"
+            f"{i:>2}  {site[:26]:<26}{score:>6} {grade:>4}  "
+            f"{trackers:>4}  {brokers:>4}  {replay:>3}  {fp}"
         )
     return "\n".join(lines)
 
 
 def _scorecard_markdown(ranked: List[ScanResult]) -> str:
     lines = [
-        "| # | Site | Score | Grade | Trackers | Brokers | Records screen |",
-        "|---|------|------:|:-----:|---------:|--------:|:--------------:|",
+        "| # | Site | Leakage | Trackers | Brokers | Records screen | Fingerprinting |",
+        "|--:|------|:--------|--------:|--------:|:--------------:|:--------------:|",
     ]
     for i, result in enumerate(ranked, 1):
-        site, score, grade, trackers, brokers, replay = _row_fields(result)
+        site, score, grade, trackers, brokers, replay, fp = _row_fields(result)
+        badge = f"{_score_dot(score)} {score} ({grade})"
         lines.append(
-            f"| {i} | {site} | {score} | {grade} | {trackers} | {brokers} | {replay} |"
+            f"| {i} | {site} | {badge} | {trackers} | {brokers} | {replay} | {fp} |"
         )
     return "\n".join(lines)
 

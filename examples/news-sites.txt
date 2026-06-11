@@ -1,0 +1,19 @@
+# A category leaderboard for launch. Run:
+#   leakwatch batch examples/news-sites.txt --format markdown --out leaderboard.md
+# News sites are among the most tracker-dense on the web, which makes a dramatic,
+# shareable scorecard. Swap in any category you like.
+cnn.com
+foxnews.com
+nytimes.com
+washingtonpost.com
+theguardian.com
+forbes.com
+businessinsider.com
+buzzfeed.com
+dailymail.co.uk
+usatoday.com
+nbcnews.com
+cnbc.com
+bloomberg.com
+reuters.com
+thesun.co.uk

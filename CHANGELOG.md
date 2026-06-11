@@ -4,6 +4,26 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.6.0] - 2026-06-11
+
+### Added
+
+- Richer leaderboard scorecard: colour-coded verdict badges (🟢/🟡/🟠/🔴 score +
+  grade) and a fingerprinting column, in both text and Markdown.
+
+### Changed
+
+- README rewritten as a proper project front page: why it exists, the full feature
+  set, dashboard keys, an example leaderboard, and the CI / login flows.
+
+## [0.5.0] - 2026-06-11
+
+### Added
+
+- Scan a new domain from inside the dashboard: an input bar at the top (press
+  `n` to focus, type a domain, Enter) re-runs the scan without quitting — leakwatch
+  becomes a reusable cockpit, not a one-shot.
+
 ## [0.4.0] - 2026-06-11
 
 ### Added

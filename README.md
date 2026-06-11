@@ -17,17 +17,24 @@ leakwatch nytimes.com
 
 ![demo](docs/demo.gif)
 
-## Why it's different
+## Why I built it
 
-Most privacy checkers are consumer web apps that hand you a wall of hostnames.
-leakwatch is built for engineers and security folks: it loads the page in a real
-browser, **defeats the consent wall**, rolls dozens of tracker domains up to the
-handful of companies they belong to, and gives you a verdict — then lets you
-script it, gate CI on it, or rank a whole category of sites.
+Privacy tools tell you a site is "bad" without showing the receipts, and security
+recon usually means digging through browser devtools by hand. leakwatch does both
+in one pass and makes the result *legible*: it loads the page in a real browser,
+defeats the consent wall, and turns the chaos of fifty tracker domains into a
+plain answer — who is watching you here, how badly, and what data leaves the page.
 
-- **Dumb surface.** Run it with a URL. A live dashboard fills in. The top line is
-  the whole story for most people.
-- **Advanced engine.** Every request, cookie, storage write, and fingerprinting
+It's built for people who want the truth quickly: engineers auditing their own
+sites, security folks profiling a target's third-party surface, privacy
+researchers ranking a whole category, and anyone who just wants to point a tool at
+a URL and get a verdict.
+
+## Dumb surface, advanced engine
+
+- **Dumb to use.** Run it with a URL. A live dashboard fills in. The top line is
+  the whole story for most people. No config, no manual.
+- **Advanced underneath.** Every request, cookie, storage write, and fingerprinting
   call is captured, classified, scored, and attributed to a parent company.
 
 ## What it does
@@ -37,9 +44,10 @@ script it, gate CI on it, or rank a whole category of sites.
   TCF, Cookiebot, Quantcast, Didomi, TrustArc, Usercentrics, Osano, CookieYes,
   Google, Complianz) by their language-independent IDs, with a multilingual text
   fallback — and records the trackers that only fire *after* acceptance.
-- **Before/after-consent headline.** "18 trackers fired before you consented."
+- **Before/after-consent headline.** "18 trackers fired before you consented" —
+  the legally interesting part, and only claimed when a banner truly existed.
 - **CMP detection.** Even when a button can't be clicked, the IAB `__tcfapi`/`__gpp`
-  APIs and known globals reveal the gate, so a consent-walled site is never
+  APIs and known globals reveal the gate, so a consent-walled site is never falsely
   reported as clean.
 - **Company rollup.** ~200 curated trackers attributed to parent entities and
   jurisdictions — Google, Meta, Oracle, LiveRamp, The Trade Desk, and the rest.
@@ -47,10 +55,12 @@ script it, gate CI on it, or rank a whole category of sites.
   screen" — Hotjar, FullStory, Clarity, …).
 - **Fingerprinting** via canvas, WebGL, AudioContext, font enumeration, and
   navigator probes.
-- **Security-headers audit.** Grades the page on HSTS, CSP, X-Frame-Options,
+- **Security-headers audit.** Grades the page A–F on HSTS, CSP, X-Frame-Options,
   X-Content-Type-Options, Referrer-Policy, and Permissions-Policy.
-- **Block detection.** Flags Cloudflare-style challenge walls, CAPTCHAs, and
-  4xx/5xx instead of pretending a site is clean.
+- **Block detection.** Flags Cloudflare-style challenge walls, CAPTCHAs, and 4xx/5xx
+  instead of pretending a site is clean.
+- **Anti-bot context.** Realistic user agent, viewport, locale, and no `webdriver`
+  tell, so sites serve their real page.
 
 ## Install
 
@@ -61,7 +71,7 @@ pip install -e .
 playwright install chromium      # one-time: leakwatch drives a real browser
 ```
 
-leakwatch ships a browser engine (Playwright/Chromium), so it is a heavier install
+leakwatch ships a browser engine (Playwright/Chromium), so it's a heavier install
 than a pure-Python linter — expected for this class of tool. If the `leakwatch`
 command isn't on your PATH, `python -m leakwatch ...` always works.
 
@@ -83,19 +93,29 @@ leakwatch login example.com -o auth.json       # sign in by hand, save the sessi
 leakwatch example.com --storage-state auth.json
 ```
 
-### Leaderboard mode — the viral artifact
+In the dashboard: type a domain in the top bar and press **Enter** (or `n` to focus
+it) to scan a new site without quitting · `r` re-runs the current site · `q` quits.
 
-Feed it a list of sites; it ranks them by how badly they leak, as a shareable
-scorecard in text, Markdown, or JSON:
+### Leaderboard mode — the shareable artifact
+
+Give it a list of sites (one per line); it ranks them by leakage into a scorecard
+in text, Markdown, or JSON:
 
 ```bash
-leakwatch batch news-sites.txt --format markdown
+leakwatch batch examples/news-sites.txt --format markdown --out leaderboard.md
 ```
+
+Example output:
+
+| # | Site | Leakage | Trackers | Brokers | Records screen | Fingerprinting |
+|--:|------|:--------|--------:|--------:|:--------------:|:--------------:|
+| 1 | example-news.com | 🔴 96 (F) | 41 | 5 | yes | yes |
+| 2 | example-shop.com | 🟠 64 (C) | 22 | 1 | no | yes |
+| 3 | example-wiki.org | 🟢 0 (A) | 0 | 0 | no | no |
 
 ### CI mode — a tracker linter for your own site
 
-Save a baseline, then fail the build when a new third party appears between
-commits — the same idea as a static-analysis linter, for trackers:
+Save a baseline, then fail the build when a new third party appears between commits:
 
 ```bash
 leakwatch diff https://your-site.com -b baseline.json   # exit 1 on new trackers
@@ -105,23 +125,22 @@ leakwatch diff https://your-site.com -b baseline.json   # exit 1 on new trackers
 
 By default leakwatch scans as a fresh anonymous visitor — exactly what you want,
 because that's what a first-time visitor leaks. To audit your *own* authenticated
-pages, `leakwatch login` opens a visible browser, you sign in by hand, and only
-the resulting session blob is saved locally. **leakwatch never sees or stores a
+pages, `leakwatch login` opens a visible browser, you sign in by hand, and only the
+resulting session blob is saved locally. **leakwatch never sees or stores a
 password.** Batch/leaderboard mode is anonymous-only by design.
 
 ## How the score works
 
 The leakage score runs 0 (clean) to 100 (worst): a small weight per tracker and
-company, with heavier penalties for data brokers, session recorders,
-fingerprinting, and trackers that slip through a consent gate. It maps to a grade
-from A to F.
+company, with heavier penalties for data brokers, session recorders, fingerprinting,
+and trackers that slip through a consent gate. It maps to a grade from A to F.
 
 ## Privacy & scope
 
-leakwatch records **only** the tracking surface — network metadata, cookies,
-storage keys, fingerprinting call counts, and response headers. It never
-downloads, stores, renders, or serves page content, images, or media. It only
-loads pages a normal visitor would, and batch scans are public-only.
+leakwatch records **only** the tracking surface — network metadata, cookies, storage
+keys, fingerprinting call counts, and response headers. It never downloads, stores,
+renders, or serves page content, images, or media. It only loads pages a normal
+visitor would, and batch scans are public-only.
 
 ## Development
 
@@ -137,8 +156,8 @@ ruff check .
 
 The classification, scoring, security-header, and reporting layers have no browser
 dependency, so the test suite runs fast and offline. The dataset under
-`src/leakwatch/data` is a curated, license-safe set; `update-data` can fetch
-fuller external lists later at your discretion.
+`src/leakwatch/data` is a curated, license-safe set; `update-data` can fetch fuller
+external lists later at your discretion.
 
 ## License
 

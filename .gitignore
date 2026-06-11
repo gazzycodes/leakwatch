@@ -33,3 +33,7 @@ SNITCH_kickoff_brief.md
 .sync_probe
 make_demo.bat
 ship.bat
+leaderboard.md
+*.har
+demo.bat
+pypi.bat

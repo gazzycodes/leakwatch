@@ -14,7 +14,7 @@ from textual import work
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal
 from textual.message import Message
-from textual.widgets import DataTable, Footer, Header, RichLog, Static
+from textual.widgets import DataTable, Footer, Header, Input, RichLog, Static
 
 from leakwatch.classify import classify_host
 from leakwatch.model import (
@@ -59,6 +59,7 @@ class LeakwatchApp(App):
     """A single-scan live dashboard."""
 
     CSS = """
+    #urlbar { height: 3; }
     #verdict {
         height: 3;
         content-align: center middle;
@@ -75,6 +76,7 @@ class LeakwatchApp(App):
     BINDINGS = [
         ("q", "quit", "Quit"),
         ("r", "rescan", "Rescan"),
+        ("n", "new_scan", "New domain"),
     ]
 
     def __init__(self, url: str, scan_kwargs: Optional[dict] = None) -> None:
@@ -86,6 +88,10 @@ class LeakwatchApp(App):
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
+        yield Input(
+            placeholder="scan a domain — type and press Enter  (n to focus)",
+            id="urlbar",
+        )
         yield Static("Scanning " + self._url + " ...", id="verdict")
         with Horizontal(id="main"):
             yield RichLog(id="feed", highlight=False, markup=True, wrap=False)
@@ -110,6 +116,7 @@ class LeakwatchApp(App):
     def on_mount(self) -> None:
         self.title = "leakwatch"
         self.sub_title = "scanning " + self._url + " ..."
+        self.set_focus(None)
         self._run_scan()
 
     def action_rescan(self) -> None:
@@ -121,6 +128,18 @@ class LeakwatchApp(App):
         self.sub_title = "scanning " + self._url + " ..."
         self._seen = 0
         self._run_scan()
+
+    def action_new_scan(self) -> None:
+        self.query_one("#urlbar", Input).focus()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        value = event.value.strip()
+        if not value:
+            return
+        self._url = value
+        event.input.value = ""
+        self.set_focus(None)
+        self.action_rescan()
 
     @work(exclusive=True)
     async def _run_scan(self) -> None:

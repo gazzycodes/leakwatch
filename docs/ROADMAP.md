@@ -3,7 +3,7 @@
 Living document. Tracks what is shipped, what is in flight, and the decisions
 behind the design so the project stays coherent as it grows.
 
-## Current release: v0.4.0
+## Current release: v0.6.0
 
 A terminal-native website privacy scanner: drive headless Chromium, record the
 full tracking surface, classify it, and present a one-line verdict over deep
