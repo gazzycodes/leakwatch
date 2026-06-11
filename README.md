@@ -1,6 +1,7 @@
 # leakwatch
 
 [![CI](https://github.com/gazzycodes/leakwatch/actions/workflows/ci.yml/badge.svg)](https://github.com/gazzycodes/leakwatch/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/leakwatch.svg)](https://pypi.org/project/leakwatch/)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -65,9 +66,7 @@ a URL and get a verdict.
 ## Install
 
 ```bash
-pip install leakwatch            # once published
-# or, from source:
-pip install -e .
+pip install leakwatch
 playwright install chromium      # one-time: leakwatch drives a real browser
 ```
 
@@ -151,6 +150,17 @@ leakwatch records **only** the tracking surface — network metadata, cookies, s
 keys, fingerprinting call counts, and response headers. It never downloads, stores,
 renders, or serves page content, images, or media. It only loads pages a normal
 visitor would, and batch scans are public-only.
+
+## Limitations
+
+leakwatch automatically handles standard cookie/consent banners — the ~dozen CMP
+frameworks that run most of the web, in any language. It does **not** try to defeat
+hard paywalls, registration walls, or bot-detection challenges (Cloudflare,
+DataDome, and similar): those withhold the page itself, so there is nothing to
+"accept." Such sites are flagged (`consent wall` / `blocked` / `failed`) and are
+never reported as clean. To audit a site you have access to behind a login or
+paywall, use `leakwatch login` to sign in by hand, then scan the authenticated
+session.
 
 ## Development
 
